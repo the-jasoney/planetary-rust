@@ -1,8 +1,8 @@
-use super::object::{Object, self};
+use super::object::Object;
 use super::vec2::Vec2;
 use crate::vec2;
 
-const GRAVITATIONAL_CONST: f64 = 1000.0;
+const GRAVITATIONAL_CONST: f64 = 500.0;
 
 pub struct Solver {
     pub objects: Vec<Object>
@@ -120,50 +120,5 @@ impl Solver {
         self.solve_accelerations();
         self.solve_euler(dt);
         self.destroy_collisions();
-    }
-
-    pub fn advance(&mut self, object: Object, t: u64) -> Vec<Vec2> {
-        let txr = t*5;
-
-        let mut positions: Vec<Vec2> = vec![];
-
-        for k in 0..txr {
-            let bv = (1/5) as f64;
-
-            self.objects.push(object);
-            let idx = self.objects.len() - 1;
-
-            println!("{}", self.objects.len());
-            if self.objects.len() > 1 {
-                for jdx in 0..self.objects.len() - 1 {
-                    println!("{}, {}", idx, jdx);
-
-                    let didxjdx = idx - jdx;
-                    let idxmjdx = if didxjdx > 0 {didxjdx - 1} else {didxjdx};
-
-                    let (head, tail) = self.objects.split_at_mut(jdx + 1);
-                    let (i, j) = (&mut tail[idxmjdx], &mut head[jdx]);
-
-                    if jdx != idx {
-                        i.acceleration =
-                        (GRAVITATIONAL_CONST * i.mass * j.mass * (j.position - i.position)) /
-                        (
-                            (j.position - i.position).magnitude() *
-                            (j.position - i.position).magnitude() *
-                            (j.position - i.position).magnitude()
-                        ).abs()
-                    }
-                }
-            }
-
-            let mut i = self.objects[idx];
-            i.velocity += i.acceleration/i.mass * bv;
-            i.position += i.velocity * bv;
-
-            positions.push(i.position);
-        }
-        self.objects.pop();
-
-        return positions;
     }
 }

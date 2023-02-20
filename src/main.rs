@@ -7,7 +7,6 @@ use piston_window::ellipse::circle;
 
 use piston_window::Motion::{MouseCursor, MouseScroll};
 use piston_window::Button as ButtonType;
-use sim::object::Object;
 use sim::solver::Solver;
 use sim::vec2::Vec2;
 use std::time::Instant;
@@ -23,8 +22,6 @@ pub fn create_window(w: u32, h: u32) -> piston_window::PistonWindow {
 
 fn main() {
     let mut window = create_window(800, 400);
-    let w = window.size().width;
-    let h = window.size().height;
 
     let mut solver = Solver::new();
 
@@ -153,24 +150,6 @@ fn main() {
                     mouse_x,
                     mouse_y
                 ], 6.0, &context.draw_state, context.transform, graphics);
-
-                /*
-                let trajectory = solver.advance(Object {
-                    position: x,
-                    velocity: vec2!(mouse_x - x.x, mouse_y - x.y),
-                    acceleration: vec2!(),
-                    constant_pos,
-                    mass
-                }, 20);
-
-                for i in trajectory {
-                    possible_ellipse_drawer.draw(
-                        circle(i.x, i.y, 5.0),
-                        &context.draw_state,
-                        context.transform,
-                        graphics
-                    );
-                }*/
             } else {
                 if constant_pos {
                     possible_const_drawer.draw(
