@@ -3,6 +3,7 @@ use super::vec2::Vec2;
 use crate::vec2;
 
 const GRAVITATIONAL_CONST: f64 = 500.0;
+const TRAJECTORY_RESOLUTION: u64 = 2;
 
 pub struct Solver {
     pub objects: Vec<Object>
@@ -120,5 +121,65 @@ impl Solver {
         self.solve_accelerations();
         self.solve_euler(dt);
         self.destroy_collisions();
+    }
+
+    pub fn center_of_mass(&self) -> Vec2 {
+        let mut massxpos = vec2!();
+        let mut masses = 0.0;
+        for i in &self.objects {
+            massxpos += i.position * i.mass;
+            masses += i.mass;
+        }
+        massxpos/masses
+    }
+
+    pub fn trajectory(&self, mut object: Object, t: u64, time_scaling_factor: f64) -> Vec<Vec2> {
+        //println!("calculating trajectory for object: {:#?}", object);
+
+        let mut locations: Vec<Vec2> = vec![];
+        let mut old_position: Vec2 = object.position;
+
+        if object.constant_pos {
+            return locations;
+        }
+
+        'f: for _ in 0..t*TRAJECTORY_RESOLUTION {
+            let dt = time_scaling_factor*(1.00/TRAJECTORY_RESOLUTION as f64);
+
+            let mut acceleration: Vec2 = vec2!();
+            // calculate gravitational pulls
+
+            for i in &self.objects {
+                let term = (GRAVITATIONAL_CONST * object.mass * i.mass * (i.position - object.position)) /
+                    (
+                        (i.position - object.position).magnitude() *
+                        (i.position - object.position).magnitude() *
+                        (i.position - object.position).magnitude()
+                    ).abs();
+
+                let radius = i.mass.sqrt();
+                let midpoint = vec2!(
+                    (old_position + object.position).x / 2.0,
+                    (old_position + object.position).y / 2.0
+                );
+                let dist = Vec2::dist_scalar(midpoint, i.position);
+
+                if
+                    (object.position - i.position).abs().magnitude() < (object.mass.sqrt() + i.mass.sqrt()) ||
+                    dist < radius
+                {
+                    break 'f;
+                }
+
+                acceleration += term;
+            }
+            old_position = object.position;
+            object.velocity += acceleration/object.mass * dt;
+            object.position += object.velocity * dt;
+
+            locations.push(object.position);
+        }
+        //println!("locations {:#?}", locations);
+        locations
     }
 }

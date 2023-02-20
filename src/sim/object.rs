@@ -1,6 +1,6 @@
 use super::vec2::Vec2;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Object {
     pub position: Vec2,
     pub velocity: Vec2,
