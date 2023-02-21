@@ -36,6 +36,8 @@ fn main() {
     let mut mouse_down_position: Option<Vec2> = None;
     let mut mouse_up_position: Option<Vec2> = None;
 
+    let mut time_change: f64 = 0.0;
+
     let mut show_vectors = false;
     let mut show_center_of_mass = false;
 
@@ -44,6 +46,9 @@ fn main() {
     while let Some(event) = window.next() {
         let dt: f64 = last_tick.elapsed().as_secs_f64();
         last_tick = Instant::now();
+        if time_scaling_factor > 0.0 || time_change > 0.0 {
+            time_scaling_factor += time_change;
+        }
 
         solver.solve_all(dt * time_scaling_factor);
         if let Event::Input(input, _) = &event {
@@ -66,11 +71,13 @@ fn main() {
                         }
                     }
 
-                    Keyboard(Key::Backspace) | Keyboard(Key::Delete) => {
+                    Keyboard(Key::Delete) => {
                         solver.objects = vec![];
                     }
-                    Keyboard(Key::Undo) => {
-                        solver.objects.pop();
+                    Keyboard(Key::Backspace) => {
+                        if x.state == ButtonState::Press {
+                            solver.objects.pop();
+                        }
                     }
                     Keyboard(Key::Space) => {
                         if x.state == ButtonState::Press {
@@ -79,12 +86,22 @@ fn main() {
                     }
                     Keyboard(Key::Down) => {
                         if x.state == ButtonState::Press && time_scaling_factor > 0.0 {
-                            time_scaling_factor -= 0.10;
+                            time_change = -0.005;
+                        } else {
+                            time_change = 0.0;
                         }
                     }
                     Keyboard(Key::Up) => {
                         if x.state == ButtonState::Press {
-                            time_scaling_factor += 0.10;
+                            time_change = 0.005;
+                        } else {
+                            time_change = 0.0;
+                        }
+                    }
+                    Keyboard(Key::D0) => {
+                        if x.state == ButtonState::Press {
+                            time_change = 0.0;
+                            time_scaling_factor = 1.0;
                         }
                     }
                     Keyboard(Key::C) => {
@@ -189,8 +206,8 @@ fn main() {
                     acceleration: vec2!(),
                     constant_pos,
                     mass
-                }, 30, time_scaling_factor);
-
+                }, (15.0 * time_scaling_factor) as u64);
+                let mut im1 = vec2!(x.x, x.y);
                 for i in trajectory {
                     possible_ellipse_drawer.draw(
                         circle(i.x, i.y, 5.0),
@@ -198,6 +215,20 @@ fn main() {
                         context.transform,
                         graphics
                     );
+
+                    possible_line_drawer.draw(
+                        [
+                            im1.x,
+                            im1.y,
+                            i.x,
+                            i.y
+                        ],
+                        &context.draw_state,
+                        context.transform,
+                        graphics
+                    );
+
+                    im1 = i;
                 }
             } else {
                 if constant_pos {

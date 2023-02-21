@@ -5,6 +5,7 @@ use crate::vec2;
 const GRAVITATIONAL_CONST: f64 = 500.0;
 const TRAJECTORY_RESOLUTION: u64 = 2;
 
+#[derive(Clone)]
 pub struct Solver {
     pub objects: Vec<Object>
 }
@@ -78,7 +79,9 @@ impl Solver {
         }
     }
 
-    pub fn destroy_collisions(&mut self) {
+    pub fn destroy_collisions(&mut self) -> Vec<[usize; 2]>{
+        let mut collisions: Vec<[usize; 2]> = vec![];
+
         'l: loop {
             for idx in 0..self.objects.len() {
                 for jdx in 0..self.objects.len() {
@@ -96,18 +99,15 @@ impl Solver {
                         };
 
                     if (i.position - j.position).abs().magnitude() < (i.mass.sqrt() + j.mass.sqrt()) {
+                        collisions.push([idx, jdx]);
                         if i.constant_pos == true {
                             self.objects.remove(jdx);
                         } else if j.constant_pos == true {
                             self.objects.remove(idx);
                         } else {
-                            if idx > jdx {
-                                self.objects.remove(idx);
-                                self.objects.remove(jdx);
-                            } else {
-                                self.objects.remove(jdx);
-                                self.objects.remove(idx);
-                            }
+                            i.mass = i.mass + j.mass;
+                            i.velocity = (i.velocity * i.mass + j.velocity * j.mass) / (i.mass + j.mass);
+                            self.objects.remove(jdx);
                         }
                         continue 'l;
                     }
@@ -115,6 +115,8 @@ impl Solver {
             }
             break 'l;
         }
+
+        collisions
     }
 
     pub fn solve_all(&mut self, dt: f64) {
@@ -133,7 +135,7 @@ impl Solver {
         massxpos/masses
     }
 
-    pub fn trajectory(&self, mut object: Object, t: u64, time_scaling_factor: f64) -> Vec<Vec2> {
+    pub fn trajectory(&self, mut object: Object, t: u64) -> Vec<Vec2> {
         //println!("calculating trajectory for object: {:#?}", object);
 
         let mut locations: Vec<Vec2> = vec![];
@@ -144,7 +146,8 @@ impl Solver {
         }
 
         'f: for _ in 0..t*TRAJECTORY_RESOLUTION {
-            let dt = time_scaling_factor*(1.00/TRAJECTORY_RESOLUTION as f64);
+
+            let dt = 1.00/TRAJECTORY_RESOLUTION as f64;
 
             let mut acceleration: Vec2 = vec2!();
             // calculate gravitational pulls
@@ -177,9 +180,10 @@ impl Solver {
             object.velocity += acceleration/object.mass * dt;
             object.position += object.velocity * dt;
 
-            locations.push(object.position);
+            locations.push(old_position);
         }
         //println!("locations {:#?}", locations);
         locations
+
     }
 }
